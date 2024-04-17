@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>[INPUT DATA]</title>
+    </head>
+    <body>
+        <center>
+            <h1>데이터 입력</h1>
+            <fieldset style="float: left; width: 46%">
+                <legend>GET</legend>
+                <form action="/input/save" method="get" enctype=multipart/form-data>
+                    <label for="value">Value:</label><br />
+                    <input type="text" id="value" name="value" /><br /><br />
+                    <label for="msg">Message:</label><br />
+                    <input type="text" id="msg" name="msg" /><br /><br />
+                    <label for="upload_file">File Upload:</label><br />
+                    <input type="file" id="upload_file" name="upload_file" /><br /><br />
+                    <input type="submit" value="Send Get" />
+                </form>
+            </fieldset>
+            <fieldset style="float: right; width: 46%">
+                <legend>POST</legend>
+                <form action="/input/save" method="post" enctype=multipart/form-data>
+                    <label for="value">Value:</label><br />
+                    <input type="text" id="value" name="value" /><br /><br />
+                    <label for="msg">Message:</label><br />
+                    <input type="text" id="msg" name="msg" /><br /><br />
+                    <label for="upload_file">File Upload:</label><br />
+                    <input type="file" id="upload_file" name="upload_file" /><br /><br />
+                    <input type="submit" value="Send Post" />
+                </form>
+            </fieldset>
+        </center>
+    </body>
+</html>

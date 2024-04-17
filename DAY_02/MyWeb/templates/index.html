@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>***MyWeb***</title>
+        <link rel="stylesheet" href="{{url_for('static', filename='css/style_1.css')}}" />
+    </head>
+    <body>
+        <center>
+            <h1>HELLO FLASK {{name}}</h1>
+            <hr />
+            <img src="{{url_for('static', filename='img/cat.jpg')}}" alt="고양이" width="50%" />
+        </center>
+    </body>
+</html>

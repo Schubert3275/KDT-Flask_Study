@@ -1,17 +1,9 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torch.utils.data import Dataset
-from torchmetrics.functional.regression import (
-    mean_absolute_error,
-    mean_squared_error,
-    r2_score,
-)
-import cgi, sys, codecs, json, os
+import torch, json, os
 from flask import Blueprint, render_template, request
+
+from .models import OilPriceModel, OilPriceDataset
 
 bp = Blueprint("main", __name__, url_prefix="/")
 
@@ -21,51 +13,66 @@ def main_about():
     return render_template("oil_price.html")
 
 
-@bp.route("", methods=["GET", "POST"])
+@bp.route("", methods=["POST"])
 def main_predict():
     if request.method == "POST":
-        select_date = [request.form["select_date"]]
+        select_date = request.form["select_date"]
+        if request.form.get("re_predict") is not None:
+            predict_price(select_date)
         return print_browser(select_date)
     return render_template("oil_price.html")
 
 
-class OilPriceDataset(Dataset):
-    def __init__(self, data, min_data=None, max_data=None, step=365):
-        data = data if isinstance(data, np.ndarray) else data.values
-        self.min_data = np.min(data) if min_data is None else min_data
-        self.max_data = np.max(data) if max_data is None else max_data
-        self.data = (data - self.min_data) / (self.max_data - self.min_data)
-        self.data = torch.FloatTensor(self.data)
-        self.step = step
+def predict_price(select_date="2030-12-31"):
+    current_dir = os.path.dirname((os.path.dirname(__file__)))
+    priceDF = pd.read_csv(
+        os.path.join(current_dir, "oil_data/oil_price.csv"),
+        encoding="utf-8",
+        parse_dates=["date"],
+    )
 
-    def __len__(self):
-        return len(self.data) - self.step
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    step = 1825
+    min_data = np.min(priceDF["price"].values)
+    max_data = np.max(priceDF["price"].values)
+    dataset = OilPriceDataset(
+        priceDF[["price"]], min_data=min_data, max_data=max_data, step=step
+    )
 
-    def __getitem__(self, i):
-        data = self.data[i : i + self.step]
-        label = self.data[i + self.step].squeeze()
-        return data, label
+    start_date = priceDF["date"].max() + pd.DateOffset(days=1)
+    end_date = pd.to_datetime(select_date)
+    full_date_range = pd.date_range(start=start_date, end=end_date)
+    pred_days = len(full_date_range)
 
+    preds = []
+    pred_model = OilPriceModel(hidden_size=32, num_layers=2, step=step).to(device)
+    pred_model.load_state_dict(
+        torch.load(
+            os.path.join(current_dir, f"oil_data/oil_price_model_state_{step}_cuda.pt"),
+            map_location=device,
+        ),
+        strict=False,
+    )
+    pred_model.eval()
+    start = dataset[len(dataset.data[step:]) - 1][0]
+    with torch.no_grad():
+        for i in range(pred_days):
+            pred = pred_model(start.unsqueeze(0).to(device))
+            start = torch.cat((start[1:].to(device), pred.unsqueeze(0)))
+            preds.append(pred.item())
 
-class OilPriceModel(nn.Module):
-    def __init__(self, hidden_size, num_layers, step):
-        super().__init__()
-        self.rnn = nn.GRU(
-            input_size=1,
-            hidden_size=hidden_size,
-            num_layers=num_layers,
-            batch_first=True,
-        )
-        self.fc1 = nn.Linear(in_features=hidden_size * step, out_features=64)
-        self.fc2 = nn.Linear(in_features=64, out_features=1)
+    real_preds = [
+        x * (float(max_data) - float(min_data)) + float(min_data) for x in preds
+    ]
 
-    def forward(self, x):
-        x, _ = self.rnn(x)
-        x = x.reshape(x.shape[0], -1)
-        x = self.fc1(x)
-        x = F.relu(x)
-        x = self.fc2(x)
-        return torch.flatten(x)
+    pred_priceDF = pd.DataFrame({"date": full_date_range, "price": real_preds})
+    pred_priceDF["price"] = pred_priceDF["price"].round(3)
+
+    pred_priceDF.to_csv(
+        os.path.join(current_dir, "oil_data/pred_oil_price.csv"),
+        index=False,
+        encoding="utf-8",
+    )
 
 
 def print_browser(select_date="2030-12-31"):
@@ -73,12 +80,10 @@ def print_browser(select_date="2030-12-31"):
     file_contents = render_template("oil_price.html")
 
     # test.csv를 읽은 후, 데이터를 JSON 형식으로 변환
-    # oil_priceDF = pd.read_csv("../oil_data/oil_price.csv", encoding="utf-8")
     current_dir = os.path.dirname((os.path.dirname(__file__)))
     oil_priceDF = pd.read_csv(
         os.path.join(current_dir, "oil_data/oil_price.csv"), encoding="utf-8"
     )
-    # oil_pred_priceDF = pd.read_csv(f"../oil_data/pred_oil_price.csv", encoding="utf-8")
     oil_pred_priceDF = pd.read_csv(
         os.path.join(current_dir, "oil_data/pred_oil_price.csv"), encoding="utf-8"
     )
@@ -98,7 +103,4 @@ def print_browser(select_date="2030-12-31"):
         "예측을 원하는 날짜를 선택하세요", chart_date
     )
 
-    return "Content-Type: text/html; charset=utf-8;\n" + file_contents_with_data
-
-
-# print(os.path.dirname(__file__))
+    return file_contents_with_data
