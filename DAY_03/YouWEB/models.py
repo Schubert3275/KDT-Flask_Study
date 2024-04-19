@@ -1,5 +1,6 @@
 ## 모듈 로딩 --------------------------------------------------
 from YouWEB import db
+from datetime import datetime
 
 
 ## Question 테이블 클래스 -------------------------------------
@@ -8,7 +9,7 @@ class Question(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     subject = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text(), nullable=False)
-    create_date = db.Column(db.DateTime(), nullable=False)
+    create_date = db.Column(db.DateTime(), nullable=False, default=datetime.now())
 
 
 ## Answer 테이블 클래스 ---------------------------------------
@@ -20,4 +21,4 @@ class Answer(db.Model):
     )
     question = db.relationship("Question", backref=db.backref("answers"))
     content = db.Column(db.Text(), nullable=False)
-    create_date = db.Column(db.DateTime(), nullable=False)
+    create_date = db.Column(db.DateTime(), nullable=False, default=datetime.now())

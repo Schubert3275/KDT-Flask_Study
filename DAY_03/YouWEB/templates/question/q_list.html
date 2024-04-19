@@ -4,12 +4,16 @@
 <table>
     <tr bgcolor="lightgray">
         <td>아이디</td>
-        <td>제 목</td>
+        <td>제목</td>
+        <td>내용</td>
+        <td>작성시간</td>
     </tr>
     {% for question in question_list %}
     <tr>
         <td>{{ question.id }}</td>
+        <td>{{ question.subject }}</td>
         <td>{{ question.content }}</td>
+        <td>{{ question.create_date }}</td>
     </tr>
 
     <tr>
@@ -19,4 +23,6 @@
 
 {% else %}
 <p><font color="red">등록된 질문 없음</font></p>
-{% endif %} {% endblock %}
+{% endif %}
+<p><a href="/question/create">질문 작성하기</a></p>
+{% endblock %}

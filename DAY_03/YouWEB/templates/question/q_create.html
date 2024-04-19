@@ -1,0 +1,16 @@
+{% extends "basic.html" %} {% block title %} 질문 {% endblock %} {% block header %}
+<h2><font color="blue">[질문 입력]</font></h2>
+{% endblock %} {% block content %}
+<fieldset>
+    <legend>질문 게시판</legend>
+    <form action="/question/input_data" method="post">
+        <label for="Tilte">제목</label><br />
+        <input type="text" id="Tilte" name="Tilte" placeholder="Enter Title" /><br /><br />
+
+        <label for="Content">내용</label><br />
+        <textarea name="Content" id="Content" placeholder="Enter Content" cols="50" rows="10"></textarea><br /><br />
+
+        <input type="submit" />
+    </form>
+</fieldset>
+{% endblock %}
